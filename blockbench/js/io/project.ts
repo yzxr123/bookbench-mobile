@@ -434,6 +434,7 @@ export class ModelProject {
 	 */
 	unselect(closing: boolean = false) {
 		if (!closing) {
+			void AutoBackup.backupOpenProject().catch(console.error);
 			this.updateThumbnail();
 			this.saveEditorState();
 		}
@@ -509,6 +510,10 @@ export class ModelProject {
 					width: 472,
 				}, async (answer) => {
 					if (answer === 0) {
+						if (window.AndroidPackage) {
+							resolve(await Codecs.project.export());
+							return;
+						}
 						if (Project.save_path || Project.export_path) {
 							(BarItems.save_project as Action).trigger();
 						} else {

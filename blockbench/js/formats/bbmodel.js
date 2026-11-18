@@ -133,13 +133,14 @@ var codec = new Codec('project', {
 		}
 	},
 	export() {
-		Blockbench.export({
+		let project = Project;
+		return Blockbench.export({
 			resource_id: 'model',
 			type: this.name,
 			extensions: [this.extension],
 			name: this.fileName(),
 			startpath: this.startPath(),
-			content: isApp ? null : this.compile(),
+			content: isApp ? null : this.compile({bitmaps: true}),
 			custom_writer: isApp ? (content, path) => {
 				// Path needs to be changed before compiling for relative resource paths
 				Project.save_path = path;
@@ -147,7 +148,10 @@ var codec = new Codec('project', {
 				content = this.compile();
 				this.write(content, path);
 			} : null,
-		}, path => this.afterDownload(path))
+		}, path => {
+			this.afterDownload(path);
+			if (window.AndroidPackage) void AutoBackup.removeBackup(project.uuid).catch(console.error);
+		})
 	},
 	async exportCollection(collection) {
 		this.context = collection;
@@ -876,7 +880,7 @@ BARS.defineActions(function() {
 		keybind: new Keybind({key: 's', ctrl: true, alt: true}),
 		condition: () => Project,
 		click: function () {
-			saveTextures(true)
+			if (!window.AndroidPackage) saveTextures(true);
 			if (isApp && Project.save_path) {
 				codec.write(codec.compile(), Project.save_path);
 			} else {
@@ -919,7 +923,7 @@ BARS.defineActions(function() {
 		keybind: new Keybind({key: 's', ctrl: true, alt: true, shift: true}),
 		condition: () => Project,
 		click: function () {
-			saveTextures(true)
+			if (!window.AndroidPackage) saveTextures(true);
 			codec.export()
 		}
 	})

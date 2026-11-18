@@ -1,0 +1,10 @@
+/android-package/build/
+/blockbench/dist/
+/blockbench/node_modules/
+*.apk
+*.apk.idsig
+*.jks
+*.keystore
+*.p12
+.env
+.env.*

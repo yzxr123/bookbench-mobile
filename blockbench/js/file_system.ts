@@ -3,6 +3,15 @@ import StateMemory from './util/state_memory'
 import { pathToExtension } from './util/util';
 import { app, currentwindow, electron, fs, ipcRenderer, webUtils } from './native_apis';
 
+declare global {
+	interface Window {
+		AndroidPackage?: {
+			saveFile(content: string | Blob, name: string): Promise<boolean>;
+			setOrientation(value: string): void;
+		}
+	}
+}
+
 function isStreamerMode(): boolean {
 	// @ts-ignore
 	return window.settings.streamer_mode.value;
@@ -129,9 +138,9 @@ export namespace Filesystem {
 				})
 				new Dialog({
 					id: 'import_type',
-					title: 'File Type',
+				title: '文件类型',
 					form: {
-						extension: {label: 'File Type', type: 'select', options: ext_options}
+					extension: {label: '文件类型', type: 'select', options: ext_options}
 					},
 					onConfirm(formResult) {
 						element.setAttribute('accept', '.'+formResult.extension);
@@ -379,15 +388,15 @@ export namespace Filesystem {
 				
 			} else {
 				let savetype = typeof options.savetype == 'function' ? options.savetype(file_name) : options.savetype;
+				let content: string | Blob;
 
 				if (savetype === 'image' && typeof options.content == 'string') {
-					saveAs(options.content, file_name, {})
+					content = options.content;
 
 				} else if (['zip', 'buffer', 'binary', 'image'].includes(savetype)) {
-					let blob = options.content instanceof Blob
+					content = options.content instanceof Blob
 							 ? options.content
 							 : new Blob([options.content], {type: "octet/stream"});
-					saveAs(blob, file_name)
 
 				} else {
 					let type = 'text/plain;charset=utf-8';
@@ -396,9 +405,15 @@ export namespace Filesystem {
 					} else if (file_name.endsWith('bbmodel')) {
 						type = 'model/vnd.blockbench.bbmodel';
 					}
-					let blob = new Blob([options.content], {type});
-					saveAs(blob, file_name, {autoBOM: true})
+					content = new Blob([options.content], {type});
 				}
+				if (window.AndroidPackage) {
+					return window.AndroidPackage.saveFile(content, file_name).then(saved => {
+						if (saved) callback?.(file_name);
+						return saved;
+					});
+				}
+				saveAs(content, file_name, {autoBOM: true});
 
 			}
 			if (typeof callback === 'function') {

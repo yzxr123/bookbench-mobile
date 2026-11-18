@@ -279,7 +279,7 @@ onVueSetup(function() {
 			template: `
 				<div :style="{'--color-profile': getProfileColor(profile)}">
 					<div id="settings_profile_wrapper">
-						Profile:
+						配置方案：
 						<div class="bb-select" ref="profile_menu" id="settings_profile_select" @click="showProfileMenu($event)" :class="{profile_is_selected: !!profile}">{{ profile_name }}</div>
 						<div class="tool" @click="profileButtonPress()"><i class="material-icons">{{ profile ? 'build' : 'add' }}</i></div>
 					</div>

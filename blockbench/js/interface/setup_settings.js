@@ -1,4 +1,3 @@
-import { AutoBackup } from "../auto_backup";
 import { changeImageEditor } from "../desktop";
 import { currentwindow } from "../native_apis";
 import { Setting, Settings, SettingsProfile } from "./settings";
@@ -10,7 +9,7 @@ function setupSettings() {
 	}
 	
 	//General
-	new Setting('language', {value: 'en', type: 'select', requires_restart: true, options: Language.options});
+	new Setting('language', {value: 'zh', type: 'select', condition: false, options: Language.options});
 	new Setting('username', {value: '', type: 'text'});
 	new Setting('streamer_mode', {value: false, onChange() {
 		StartScreen.vue._data.redact_names = settings.streamer_mode.value;
@@ -19,12 +18,17 @@ function setupSettings() {
 	}});
 	new Setting('classroom_mode', {value: false, requires_restart: true});
 	new Setting('cdn_mirror', {value: false});
-	new Setting('recovery_save_interval', {value: 30, type: 'number', min: 0, onChange() {
-		clearTimeout(AutoBackup.loop_timeout);
-		AutoBackup.backupProjectLoop(false);
-	}});
 
 	//Interface
+	new Setting('android_orientation', {
+		category: 'interface',
+		name: '屏幕方向',
+		description: '选择跟随系统、锁定竖屏或锁定横屏。',
+		value: 'system',
+		type: 'select',
+		options: {system: '跟随系统', portrait: '竖屏', landscape: '横屏'},
+		onChange(value) { window.AndroidPackage.setOrientation(value); },
+	});
 	new Setting('interface_mode', 		{category: 'interface', value: 'auto', requires_restart: true, type: 'select', options: {
 		'auto': tl('settings.interface_mode.auto'),
 		'desktop': tl('settings.interface_mode.desktop'),
@@ -50,7 +54,6 @@ function setupSettings() {
 	new Setting('status_bar_transform_sliders', {category: 'interface', value: true, condition: Blockbench.isTouch, onChange(value) {
 		updateInterface();
 	}});
-	new Setting('always_show_splash_art',{category: 'interface', value: true});
 	new Setting('origin_size',  		{category: 'interface', value: 10, type: 'number', min: 2, max: 40});
 	new Setting('control_size',  		{category: 'interface', value: 10, type: 'number', min: 2, max: 40});
 	new Setting('motion_trails',  		{category: 'interface', value: true, onChange() {

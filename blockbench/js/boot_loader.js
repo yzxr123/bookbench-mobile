@@ -84,7 +84,7 @@ if (isApp) {
 	updateRecentProjects()
 }
 
-if (!isApp) {
+if (!isApp && !window.AndroidPackage) {
 	async function registerSW() {
 		if ('serviceWorker' in navigator) {
 			try {
@@ -101,7 +101,7 @@ if (!Blockbench.isWeb || !Blockbench.isPWA) {
 	$.ajaxSetup({ cache: false });
 }
 
-if (Blockbench.startup_count == 1) {
+if (!window.AndroidPackage && Blockbench.startup_count == 1) {
 	try {
 		jQuery.ajax({
 			url: 'https://blckbn.ch/api/event/new_installation',
@@ -112,7 +112,7 @@ if (Blockbench.startup_count == 1) {
 		console.error(err);
 	}
 }
-if (Blockbench.startup_count == 3) {
+if (!window.AndroidPackage && Blockbench.startup_count == 3) {
 	try {
 		jQuery.ajax({
 			url: 'https://blckbn.ch/api/event/recurring_user',

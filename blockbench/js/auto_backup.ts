@@ -3,6 +3,9 @@ import { addStartScreenSection } from "./interface/start_screen";
 import { currentwindow } from "./native_apis";
 import { getDateDisplay } from "./util/util";
 
+const backupInterval = 300_000;
+const retentionSeconds = 3 * 24 * 60 * 60;
+
 type ProjectSave = {
 	uuid: UUID
 	data: string
@@ -41,6 +44,7 @@ export const AutoBackup = {
 		}
 		request.onsuccess = async function() {
 			AutoBackup.db = request.result;
+			await AutoBackup.pruneExpired();
 			
 			// Start Screen Message
 			let has_backups = await AutoBackup.hasBackups();
@@ -70,9 +74,7 @@ export const AutoBackup = {
 		}
 	},
 	async backupOpenProject() {
-		if (!Project) return;
-		let transaction = AutoBackup.db.transaction('projects', 'readwrite');
-		let store = transaction.objectStore('projects');
+		if (!AutoBackup.db || !Project || Project.saved) return;
 
 		let model = Codecs.project.compile({compressed: false, backup: true, raw: true});
 		let model_json = JSON.stringify(model);
@@ -82,11 +84,31 @@ export const AutoBackup = {
 			name: Project.name,
 			date: Math.round(Date.now() / 1000)
 		}
-		store.put(project_save);
+		let transaction = AutoBackup.db.transaction('projects', 'readwrite');
+		transaction.objectStore('projects').put(project_save);
 		
-		await new Promise((resolve) => {
+		await new Promise((resolve, reject) => {
 			transaction.oncomplete = resolve;
+			transaction.onabort = () => reject(transaction.error);
 		})
+	},
+	async pruneExpired() {
+		if (!AutoBackup.db) return;
+		const now = Math.floor(Date.now() / 1000);
+		const transaction = AutoBackup.db.transaction('projects', 'readwrite');
+		const request = transaction.objectStore('projects').openCursor();
+		request.onsuccess = () => {
+			const cursor = request.result;
+			if (!cursor) return;
+			const backup = cursor.value as ProjectSave;
+			if (backup.date == null) cursor.update({...backup, date: now});
+			else if (backup.date <= now - retentionSeconds) cursor.delete();
+			cursor.continue();
+		};
+		await new Promise((resolve, reject) => {
+			transaction.oncomplete = resolve;
+			transaction.onabort = () => reject(transaction.error);
+		});
 	},
 	/**
 	 * Test if saved backups exist
@@ -108,7 +130,8 @@ export const AutoBackup = {
 	/**
 	 * Recover all saved backups
 	 */
-	recoverAllBackups(confirm_selection: boolean = false): Promise<void> {
+	async recoverAllBackups(confirm_selection: boolean = false): Promise<void> {
+		await AutoBackup.pruneExpired();
 		return new Promise<void>((resolve, reject) => {
 			let transaction = AutoBackup.db.transaction('projects', 'readonly');
 			let store = transaction.objectStore('projects');
@@ -120,7 +143,7 @@ export const AutoBackup = {
 				if (confirm_selection && projects.length > 1) {
 					let form: Record<string, FormElementOptions | '_'> = {
 						info: {
-							text: '⚠ Recovering models is only a backup. Please remember to always save your work to your device.',
+							text: '自动备份保留三天。恢复后，请将项目保存为文件。',
 							type: 'info'
 						}
 					};
@@ -188,6 +211,7 @@ export const AutoBackup = {
 						let parsed_content = JSON.parse(project.data);
 						setupProject(Formats[parsed_content.meta.model_format] || Formats.free, project.uuid);
 						Codecs.project.parse(parsed_content, 'backup.bbmodel');
+						Project.saved = false;
 						await new Promise(r => setTimeout(r, 40));
 					} catch(err) {
 						console.error(err);
@@ -226,20 +250,12 @@ export const AutoBackup = {
 			}
 		});
 	},
-	loop_timeout: null,
 	backupProjectLoop(run_save: boolean = true) {
-		if (run_save && Project && (Outliner.root.length || Project.textures.length)) {
-			try {
-				AutoBackup.backupOpenProject();
-			} catch (err) {
-				console.error('Unable to create backup. ', err)
-			}
+		if (run_save) {
+			AutoBackup.pruneExpired().catch(console.error);
+			AutoBackup.backupOpenProject().catch(console.error);
 		}
-		let interval = settings.recovery_save_interval.value as number;
-		if (interval != 0) {
-			interval = Math.max(interval, 5);
-			AutoBackup.loop_timeout = setTimeout(() => AutoBackup.backupProjectLoop(true), interval * 1000);
-		}
+		setTimeout(() => AutoBackup.backupProjectLoop(true), backupInterval);
 	}
 }
 const global = {

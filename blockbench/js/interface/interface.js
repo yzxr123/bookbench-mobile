@@ -415,7 +415,8 @@ export function resizeWindow(event) {
 }
 
 export function setProjectTitle(title) {
-	let window_title = 'Blockbench';
+	const app_name = window.AndroidPackage ? '方模编辑器' : 'Blockbench';
+	let window_title = app_name;
 	if (title == undefined && Project.name) {
 		title = Project.name
 	}
@@ -429,7 +430,7 @@ export function setProjectTitle(title) {
 				title = title.replace(/^geometry\./,'').replace(/:[a-z0-9.]+/, '')
 			}
 		}
-		window_title = title+' - Blockbench';
+		window_title = title + ' - ' + app_name;
 	} else {
 		Prop.file_name = Prop.file_name_alt = ''
 	}

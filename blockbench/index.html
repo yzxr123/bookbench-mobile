@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>Blockbench</title>
+	<title>方模编辑器</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="theme-color" content="#121418">
@@ -54,7 +54,7 @@
 		}
 		window.factoryResetAndReload = function() {
 			let lang_key = 'menu.help.developer.reset_storage.confirm';
-			let result = window.confirm((window.tl && tl(lang_key) != lang_key) ? tl(lang_key) : 'Are you sure you want to reset Blockbench to factory settings? This will delete all custom settings, keybindings and installed plugins.');
+			let result = window.confirm((window.tl && tl(lang_key) != lang_key) ? tl(lang_key) : '确定恢复出厂设置吗？这将删除自定义设置、快捷键和已安装的插件。');
 			if (result) {
 				localStorage.clear();
 				if ('Blockbench' in window) Blockbench.addFlag('no_localstorage_saving');
@@ -64,11 +64,11 @@
 		}
 	</script>
 	<div id="loading_error_message" style="display: none;">
-		<div>An error occurred while loading Blockbench</div>
+		<div>载入方模编辑器时出错</div>
 		<div id="loading_error_detail" style="color: var(--color-subtle_text);"></div>
-		<button onclick="window.Blockbench ? window.Blockbench.reload() : window.location.reload(true)" class="large" style="margin-right: auto; margin-left: auto;">Reload</button>
-		<button onclick="factoryResetAndReload()" class="large" style="margin-right: auto; margin-left: auto;">Factory Reset</button>
-		<button onclick="window.close()" class="large" style="margin-right: auto; margin-left: auto;">Quit</button>
+		<button onclick="window.Blockbench ? window.Blockbench.reload() : window.location.reload(true)" class="large" style="margin-right: auto; margin-left: auto;">重新加载</button>
+		<button onclick="factoryResetAndReload()" class="large" style="margin-right: auto; margin-left: auto;">恢复出厂设置</button>
+		<button onclick="window.close()" class="large" style="margin-right: auto; margin-left: auto;">退出</button>
 		<div id="loading_error_version" style="color: var(--color-subtle_text);"></div>
 	</div>
 	<script type="module" src="dist/bundle.js"></script>
@@ -80,7 +80,6 @@
 	<header>
 		<ul id="mac_window_menu" hidden></ul>
 		<div id="corner_logo" class="app-drag-region">
-			<img class="blockbench_logo" src="assets/logo_text_white.svg" alt="Blockbench" />
 		</div>
 		<ul id="menu_bar" class="scroll_horizontal"></ul>
 		<div id="title_bar_home_button" class="tool hidden" onclick="Interface.tab_bar.openNewTab()"><i class="material-icons icon">home</i></div>

@@ -19,7 +19,7 @@ export const LastVersion = localStorage.getItem('last_version') || localStorage.
 export const Blockbench = {
 	//...previous_data,
 	isWeb: !isApp,
-	isMobile: (window.innerWidth <= 960 || window.innerHeight <= 500) && 'ontouchend' in document,
+	isMobile: !!window.AndroidPackage || ((window.innerWidth <= 960 || window.innerHeight <= 500) && 'ontouchend' in document),
 	isLandscape: window.innerWidth > window.innerHeight,
 	isTouch: 'ontouchend' in document,
 	get isPWA() {
@@ -230,7 +230,7 @@ export const Blockbench = {
 	notification(title: string, text: string, icon?: string) {
 		Notification.requestPermission().then(status => {
 			if (status == 'granted') {
-				let n = new Notification(title, {body: text, icon: icon||'favicon.png'})
+				let n = new Notification(title, {body: text, icon: icon || (window.AndroidPackage ? undefined : 'favicon.png')})
 				n.onclick = function() {
 					if (isApp) {
 						currentwindow.focus();

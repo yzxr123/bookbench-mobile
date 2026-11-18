@@ -3,8 +3,6 @@ import { ModelLoader, ModelLoaderOptions } from "../io/model_loader";
 import { documentReady } from "../misc";
 import { app, fs } from "../native_apis";
 import { pureMarked } from "../util/util";
-import VersionUtil from '../util/version_util';
-import { ExperimentalSettings } from "./experimental_settings";
 
 export const StartScreen = {
 	loaders: {},
@@ -192,8 +190,6 @@ export function addStartScreenSection(id: string, data: StartScreenSection) {
 onVueSetup(async function() {
 	StateMemory.init('start_screen_list_type', 'string')
 
-	let slideshow_timer = 0;
-
 	interface StartScreenComponentData {
 		formats: typeof Formats
 		loaders: typeof ModelLoader.loaders
@@ -208,14 +204,7 @@ onVueSetup(async function() {
 		mobile_layout: boolean
 		thumbnails: Record<string, string>,
 		getIconNode: typeof Blockbench.getIconNode,
-		slideshow: {
-			source: string
-			description: string
-		}[],
-		show_splash_screen: boolean
-		slideshow_selected: number
-		slideshow_last: any
-		slideshow_autoplay: boolean
+
 	}
 	StartScreen.vue = new Vue({
 		el: '#start_screen',
@@ -235,28 +224,6 @@ onVueSetup(async function() {
 			thumbnails: {},
 			getIconNode: Blockbench.getIconNode,
 
-			slideshow: [
-				{
-					source: "./assets/splash_art/1.webp",
-					description: "Splash Art 1st Place by [Wanwin](https://contests.blockbench.net/artists/402502582360080384) & [Flok](https://contests.blockbench.net/artists/445419542664183808)",
-				},
-				{
-					source: "./assets/splash_art/2.webp",
-					description: "Splash Art 2nd Place by [AnzSama](https://contests.blockbench.net/artists/726636243785613372) & [m0NESY](https://contests.blockbench.net/artists/768854550744137800)",
-				},
-				{
-					source: "./assets/splash_art/3.webp",
-					description: "Splash Art 3rd Place by [Coco](https://contests.blockbench.net/artists/1008248909631598662) & [土豆废弃物](https://contests.blockbench.net/artists/1502148250281578516)",
-				},
-				{
-					source: "./assets/splash_art/4.webp",
-					description: "Splash Art 4th Place by [Conczin](https://contests.blockbench.net/artists/200587604582727682)",
-				}
-			],
-			show_splash_screen: (Blockbench.hasFlag('after_update') || settings.always_show_splash_art.value),
-			slideshow_selected: 0,
-			slideshow_last: null,
-			slideshow_autoplay: true
 		} as StartScreenComponentData},
 		methods: {
 			getDate(p) {
@@ -383,20 +350,9 @@ onVueSetup(async function() {
 				if (typeof format_entry.new == 'function') format_entry.new();
 			},
 
-			getBackground(url: string) {
-				return `url("${url}")`
-			},
-			setSlide(index: number) {
-				this.slideshow_last = this.slideshow_selected;
-				this.slideshow_selected = index;
-				setTimeout(() => this.slideshow_last = null, 500);
-				slideshow_timer = 0;
-			},
-
 			openLink(this: StartScreenComponentData, link: string) {
 				Blockbench.openLink(link);
 			},
-			pureMarked,
 			tl
 		},
 		computed: {
@@ -414,21 +370,7 @@ onVueSetup(async function() {
 		mounted() {
 			this.updateThumbnails();
 
-			setInterval(() => {
-				if (this.show_splash_screen && this.slideshow_autoplay && this.$el.offsetParent) {
-					slideshow_timer += 1;
-
-					if (slideshow_timer == 24) {
-						this.setSlide((this.slideshow_selected+1) % this.slideshow.length);
-					}
-				}
-			}, 1000);
-
 			let start_screen_element = document.getElementById('start_screen');
-
-			if (settings.always_show_splash_art.value && !Blockbench.hasFlag('after_update') && !Blockbench.isMobile) {
-				start_screen_element.scrollTop = 100;
-			}
 
 			new ResizeLine('start_screen_width', {
 				horizontal: false,
@@ -458,18 +400,6 @@ onVueSetup(async function() {
 		template: `
 			<div id="start_screen">
 				<content>
-					<section id="splash_screen" v-if="show_splash_screen" class="start_screen_section" section_id="splash_screen">
-						<div class="splash_art_slideshow_image" :style="{backgroundImage: getBackground(slideshow[slideshow_selected].source)}">
-							<p v-if="slideshow[slideshow_selected].description" class="start_screen_graphic_description" v-html="pureMarked(slideshow[slideshow_selected].description)"></p>
-						</div>
-						<div class="splash_art_slideshow_image slideshow_previous" v-if="typeof slideshow_last == 'number'" :style="{backgroundImage: getBackground(slideshow[slideshow_last].source)}">
-						</div>
-						<ul class="splash_art_slideshow_points">
-							<li v-for="(image, index) in slideshow" :key="index" :class="{selected: index == slideshow_selected}" @click="setSlide(index)"></li>
-						</ul>
-						<i class="material-icons start_screen_close_button" @click="show_splash_screen = false">clear</i>
-					</section>
-
 					<section id="start_files" class="start_screen_section" section_id="start_files">
 
 						<div class="start_screen_left" v-if="!(selected_format_id && mobile_layout)">
@@ -501,7 +431,7 @@ onVueSetup(async function() {
 										</li>
 										<li class="format_entry start_screen_link" @click="openLink('https://blockbench.net/wiki')">
 											<span class="icon_wrapper f_left"><i class="material-icons">menu_book</i></span>
-											<label>Blockbench Wiki</label>
+										<label>Blockbench 文档</label>
 										</li>
 									</ul>
 								</li>
@@ -612,201 +542,7 @@ onVueSetup(async function() {
 });
 
 
-if (isApp && location.href.endsWith('/blockbench/index.html')) {
-	ExperimentalSettings.add(
-		'always_show_update_screen',
-		{type: 'checkbox', label: 'Always Show Update Screen', value: false}
-	);
-	if (ExperimentalSettings.get('always_show_update_screen')) {
-		$.getJSON('./content/news.json').then(data => {
-			for (let feature of data.new_version.features) {
-				if (feature.image) {
-					feature.image = feature.image.replace('https://web.blockbench.net', '.');
-				}
-			}
-			addStartScreenSection('new_version', data.new_version)
-		})
-	}
-}
-
-var news_call = $.ajax({
-	cache: false,
-	url: 'https://web.blockbench.net/content/news.json',
-	dataType: 'json'
-});
-documentReady.then(() => {
-
-	//Bluesky
-	let bsky_ad;
-	Blockbench.onUpdateTo('4.12.2', () => {
-		//Bluesky
-		if (!settings.classroom_mode.value) {
-			bsky_ad = true;
-			addStartScreenSection('bluesky_link', {
-				color: 'rgb(32, 139, 254);',
-				text_color: '#ffffff',
-				graphic: {type: 'icon', icon: 'fab.fa-bluesky'},
-				text: [
-					{type: 'h3', text: 'Blockbench on Bluesky'},
-					{text: 'Follow Blockbench on Bluesky for the latest news & cool models from the community! [@blockbench.net](https://bsky.app/profile/blockbench.net)'}
-				],
-				last: true
-			})
-		}
-	})
-	if (!settings.classroom_mode.value && !bsky_ad && Blockbench.startup_count < 20 && Blockbench.startup_count % 5 === 4) {
-		bsky_ad = true;
-		addStartScreenSection('bluesky_link', {
-			color: 'rgb(32, 139, 254);',
-			text_color: '#ffffff',
-			graphic: {type: 'icon', icon: 'fab.fa-bluesky'},
-			text: [
-				{type: 'h3', text: 'Blockbench on Bluesky'},
-				{text: 'Follow Blockbench on Bluesky for the latest news & cool models from the community! [@blockbench.net](https://bsky.app/profile/blockbench.net)'}
-			],
-			last: true
-		})
-	}
-	//Discord
-	if (!settings.classroom_mode.value && Blockbench.startup_count < 6 && !bsky_ad) {
-		addStartScreenSection('discord_link', {
-			color: '#5865F2',
-			text_color: '#ffffff',
-			graphic: {type: 'icon', icon: 'fab.fa-discord'},
-			text: [
-				{type: 'h2', text: 'Discord Server'},
-				{text: 'You need help with modeling or you want to chat about Blockbench? Join the official [Blockbench Discord](https://discord.gg/WVHg5kH)!'}
-			],
-			last: true
-		})
-	}
-
-	// Quick Setup
-	if (Blockbench.startup_count <= 1) {
-		
-		let section = Interface.createElement('section', {id: 'quick_setup'});
-		document.querySelector('#start_screen #splash_screen').after(section);
-
-		new Vue({
-			data() {return {
-				language: Language.code,
-				language_original: Language.code,
-				languages: Language.options,
-				keymap: 'default',
-				keymap_changed: false,
-				theme: 'default',
-				keymap_options: {
-					default: tl('action.load_keymap.default'),
-					mouse: tl('action.load_keymap.mouse'),
-					blender: 'Blender',
-					cinema4d: 'Cinema 4D',
-					maya: 'Maya',
-				},
-			}},
-			methods: {
-				tl,
-				close() {
-					this.$el.remove();
-				},
-				reload() {
-					Blockbench.reload();
-				},
-				loadTheme(theme_id) {
-					this.theme = theme_id;
-					let theme = CustomTheme.themes.find(t => t.id == theme_id);
-					if (theme) CustomTheme.loadTheme(theme);
-				},
-				getThemeThumbnailStyle(theme_id) {
-					let theme = CustomTheme.themes.find(t => t.id == theme_id);
-					let style = {};
-					if (!theme) return style;
-					for (let key in theme.colors) {
-						style[`--color-${key}`] = theme.colors[key];
-					}
-					return style;
-				},
-				openThemes() {
-					(BarItems.theme_window as Action).click();
-				}
-			},
-			watch: {
-				language(v) {
-					settings.language.set(v);
-					Settings.save();
-				},
-				keymap(keymap, old_keymap) {
-					this.keymap_changed = true;
-					let success = Keybinds.loadKeymap(keymap, true);
-					if (!success) this.keymap = old_keymap;
-				}
-			},
-			template: `
-				<section id="quick_setup" section_id="quick_setup" class="start_screen_section">
-					<i class="material-icons start_screen_close_button" @click="close()">clear</i>
-					<h2>${tl('mode.start.quick_setup')}</h2>
-
-					<div>
-						<label>${tl('mode.start.keymap')}:</label>
-						<select-input v-model="keymap" :options="keymap_options" />
-						<p v-if="keymap_changed">{{ tl('action.load_keymap.' + keymap + '.desc') }}</p>
-					</div>
-					<div>
-						<label>${tl('settings.language')}:</label>
-						<select-input v-model="language" :options="languages" />
-						<div class="tool" @click="reload()" v-if="language != language_original" :title="tl('action.reload')">
-							<i class="material-icons">refresh</i>
-						</div>
-						<p v-if="language != language_original">{{ tl('message.restart_to_update') }}</p>
-					</div>
-					<div style="width: 640px;">
-						<label>${tl('dialog.settings.theme')}:</label>
-						<div class="quick_setup_theme" :class="{selected: theme == 'default'}" @click="loadTheme('default')"><div :style="getThemeThumbnailStyle('default')"></div>Dark</div>
-						<div class="quick_setup_theme" :class="{selected: theme == 'default_light'}" @click="loadTheme('default_light')"><div :style="getThemeThumbnailStyle('default_light')"></div>Light</div>
-						<div class="quick_setup_theme" :class="{selected: theme == 'contrast'}" @click="loadTheme('contrast')"><div :style="getThemeThumbnailStyle('contrast')"></div>Contrast</div>
-						<div class="quick_setup_theme more_themes" @click="openThemes()"><div><i class="material-icons">more_horiz</i></div>{{ tl('mode.start.quick_setup.more_themes') }}</div>
-					</div>
-				</section>
-			`
-		}).$mount(section);
-	}
-	Interface.Resizers.start_screen_width.update();
-})
-Promise.all([news_call, documentReady]).then((results) => {
-	if (!results || !results[0]) return;
-	let data = results[0] as {
-		new_version: StartScreenSection,
-		psa?: StartScreenSection & {version?: string}
-	};
-
-	//Update Screen
-	if (Blockbench.hasFlag('after_update') && data.new_version) {
-		data.new_version.insert_after = 'splash_screen'
-		addStartScreenSection('new_version', data.new_version);
-		jQuery.ajax({
-			url: 'https://blckbn.ch/api/event/successful_update',
-			type: 'POST',
-			data: {
-				version: Blockbench.version
-			}
-		})
-	}
-	if (data.psa) {
-		(function() {
-			if (typeof data.psa.version == 'string') {
-				if (data.psa.version.includes('-')) {
-					let limits = data.psa.version.split('-');
-					if (limits[0] && VersionUtil.compare(Blockbench.version, '<', limits[0])) return;
-					if (limits[1] && VersionUtil.compare(Blockbench.version, '>', limits[1])) return;
-				} else {
-					if (data.psa.version != Blockbench.version) return;
-				}
-			}
-			addStartScreenSection('psa', data.psa);
-		})()
-	}
-	Interface.Resizers.start_screen_width.update();
-})
-
+documentReady.then(() => Interface.Resizers.start_screen_width.update());
 
 const global = {
 	StartScreen,

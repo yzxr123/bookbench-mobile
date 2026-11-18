@@ -3,7 +3,7 @@ import VersionUtil from '../util/version_util'
 BARS.defineActions(() => {
 	new Action('about_window', {
 		name: tl('dialog.settings.about') + '...',
-		description: `Blockbench ${Blockbench.version}`,
+		description: '关于方模编辑器',
 		icon: 'info',
 		category: 'blockbench',
 		click: function () {
@@ -11,7 +11,7 @@ BARS.defineActions(() => {
 				isApp,
 				version_label: Blockbench.version
 			};
-			jQuery.ajax({
+			if (!window.AndroidPackage) jQuery.ajax({
 				url: 'https://api.github.com/repos/JannisX11/blockbench/releases/latest',
 				cache: false,
 				type: 'GET',
@@ -48,15 +48,20 @@ BARS.defineActions(() => {
 					data() {return data},
 					template: `
 						<div>
-							<div class="blockbench_logo" id="about_page_title">
-								<img src="assets/logo_text_white.svg" alt="Blockbench" width="340px">
-							</div>
-							<p>Version <span>{{ version_label }}</span></p>
+							<h2>方模编辑器</h2>
+							<p>基于 Blockbench <span>{{ version_label }}</span> 的非官方安卓移植版</p>
+							<p>按现状提供，可按 GNU GPL v3 或更新版本再分发。</p>
+							<p>
+								<a class="open-in-browser" href="https://github.com/yzxr123/fangmo-editor">本项目源码与许可证</a>
+							</p>
+							<a class="open-in-browser" href="https://blockbench.net" aria-label="访问 Blockbench 上游网站">
+								<img src="assets/logo_text_white.svg" alt="Blockbench 上游项目" width="220px">
+							</a>
 
 							<div class="socials">
 								<a class="open-in-browser" href="https://blockbench.net">
 									<i class="icon icon-blockbench_inverted" style="transform: scale(1.3);"></i>
-									<label>Website</label>
+									<label>上游网站</label>
 								</a>
 								<a class="open-in-browser" href="https://bsky.app/profile/blockbench.net">
 									<i class="icon fab fa-bluesky"></i>
@@ -80,26 +85,25 @@ BARS.defineActions(() => {
 								</a>
 								<a class="open-in-browser" href="https://blockbench.net/wiki">
 								<i class="icon material-icons">menu_book</i>
-									<label>Wiki</label>
+									<label>上游文档</label>
 								</a>
 							</div>
 
-							<p>Created by Jannis Petersen</p>
-							<p style="color: var(--color-subtle_text);">A free and open-source low-poly model editor. To make 3D art easy and accessible for everyone.
-								For all who enjoy stylized 3D art. For game developers, students, content creators, and for the Minecraft community.</p>
+							<p>上游 Blockbench 由 Jannis Petersen 创建。</p>
+							<p style="color: var(--color-subtle_text);">面向低多边形建模、贴图绘制和动画制作的开源编辑器。</p>
 
-							<h4>SPECIAL THANKS TO</h4>
+							<h4>上游项目致谢</h4>
 							<ul class="multi_column_list special_thanks_mentions">
 								<li>Mojang Studios</li>
-								<li>All contributors</li>
-								<li>The community moderators</li>
-								<li>All donators</li>
-								<li>All translators</li>
+								<li>所有贡献者</li>
+								<li>社区管理团队</li>
+								<li>所有捐助者</li>
+								<li>所有译者</li>
 								<li>Wacky</li>
 								<li>Ewan Howell and Lukas</li>
 								<li>SirBenet</li>
 								<li>Sultan Taha and Kanno</li>
-								<li>The Blockbench Community</li>
+								<li>Blockbench 社区</li>
 							</ul>
 
 							<h4>FRAMEWORKS, LIBRARIES, AND ICONS</h4>
