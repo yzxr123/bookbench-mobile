@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory)][string]$PlatformJar,
     [Parameter(Mandatory)][string]$BuildTools,
     [string]$SigningKeystore,
+    [string]$SigningKeyAlias,
     [switch]$Debuggable,
     [switch]$SkipWebBuild
 )
@@ -68,6 +69,7 @@ $Html.Replace('<html lang="en">', '<html lang="zh-CN">').
     Set-Content -Encoding utf8NoBOM "$Web/index.html"
 
 $Manifest = Get-Content -Raw "$PSScriptRoot/AndroidManifest.xml"
+$Version = ([xml]$Manifest).manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
 if ($Debuggable) {
     $Manifest = $Manifest.Replace('<application', '<application android:debuggable="true"')
 }
@@ -86,18 +88,17 @@ if ('assets/web/index.html' -cnotin $ApkEntries -or 'assets/web/dist/bundle.js' 
 
 if ($SigningKeystore) {
     $Key = (Resolve-Path -LiteralPath $SigningKeystore).Path
-    if (!$env:FANGMO_KEYSTORE_PASSWORD) { throw 'Set FANGMO_KEYSTORE_PASSWORD for the release signing key.' }
-    $KeyAlias = 'fangmo-release'
-    $Password = 'env:FANGMO_KEYSTORE_PASSWORD'
+    if (!$env:BOOKBENCH_KEYSTORE_PASSWORD) { throw 'Set BOOKBENCH_KEYSTORE_PASSWORD for the release signing key.' }
+    $Password = 'env:BOOKBENCH_KEYSTORE_PASSWORD'
 } else {
     $Key = "$Staging/local-signing.jks"
-    $KeyAlias = 'fangmo-local'
     $Password = 'pass:android'
     if (!(Test-Path -LiteralPath $Key)) {
-        & "$JdkBin/keytool.exe" -genkeypair -keystore $Key -alias $KeyAlias -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Fangmo local Android build"
+        & "$JdkBin/keytool.exe" -genkeypair -keystore $Key -alias bookbench-local -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Bookbench Mobile local Android build"
     }
 }
-$Name = if ($Debuggable) { 'fangmo-editor-0.1.0-test.apk' } else { 'fangmo-editor-0.1.0.apk' }
-& "$BuildTools/apksigner.bat" sign --ks $Key --ks-key-alias $KeyAlias --ks-pass $Password --key-pass $Password --out "$Staging/$Name" "$Staging/aligned.apk"
+$Name = if ($Debuggable) { "bookbench-mobile-$Version-test.apk" } else { "bookbench-mobile-$Version.apk" }
+$AliasArgs = if ($SigningKeyAlias) { @('--ks-key-alias', $SigningKeyAlias) } else { @() }
+& "$BuildTools/apksigner.bat" sign --ks $Key @AliasArgs --ks-pass $Password --key-pass $Password --out "$Staging/$Name" "$Staging/aligned.apk"
 & "$BuildTools/apksigner.bat" verify --verbose "$Staging/$Name"
 Write-Output "$Staging/$Name"

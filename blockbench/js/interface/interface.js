@@ -415,7 +415,7 @@ export function resizeWindow(event) {
 }
 
 export function setProjectTitle(title) {
-	const app_name = window.AndroidPackage ? '方模编辑器' : 'Blockbench';
+	const app_name = window.AndroidPackage ? 'Bookbench 手机版' : 'Blockbench';
 	let window_title = app_name;
 	if (title == undefined && Project.name) {
 		title = Project.name

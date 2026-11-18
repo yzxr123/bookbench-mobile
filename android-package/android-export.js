@@ -23,6 +23,7 @@
             clearTimeout(timeout);
             channel.onmessage = null;
             if (event.data === 'ok') resolve(true);
+            else if (event.data.startsWith('saved:')) resolve(event.data.slice(6));
             else if (event.data === 'cancel') resolve(false);
             else reject(new Error('安卓文件写入失败'));
         };

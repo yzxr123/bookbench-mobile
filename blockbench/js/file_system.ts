@@ -6,7 +6,7 @@ import { app, currentwindow, electron, fs, ipcRenderer, webUtils } from './nativ
 declare global {
 	interface Window {
 		AndroidPackage?: {
-			saveFile(content: string | Blob, name: string): Promise<boolean>;
+			saveFile(content: string | Blob, name: string): Promise<string | false>;
 			setOrientation(value: string): void;
 		}
 	}
@@ -408,9 +408,9 @@ export namespace Filesystem {
 					content = new Blob([options.content], {type});
 				}
 				if (window.AndroidPackage) {
-					return window.AndroidPackage.saveFile(content, file_name).then(saved => {
-						if (saved) callback?.(file_name);
-						return saved;
+					return window.AndroidPackage.saveFile(content, file_name).then(savedName => {
+						if (savedName) callback?.(savedName);
+						return !!savedName;
 					});
 				}
 				saveAs(content, file_name, {autoBOM: true});

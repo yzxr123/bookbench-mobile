@@ -3,7 +3,7 @@ import VersionUtil from '../util/version_util'
 BARS.defineActions(() => {
 	new Action('about_window', {
 		name: tl('dialog.settings.about') + '...',
-		description: '关于方模编辑器',
+		description: '关于 Bookbench 手机版',
 		icon: 'info',
 		category: 'blockbench',
 		click: function () {
@@ -48,11 +48,11 @@ BARS.defineActions(() => {
 					data() {return data},
 					template: `
 						<div>
-							<h2>方模编辑器</h2>
+							<h2>Bookbench 手机版</h2>
 							<p>基于 Blockbench <span>{{ version_label }}</span> 的非官方安卓移植版</p>
 							<p>按现状提供，可按 GNU GPL v3 或更新版本再分发。</p>
 							<p>
-								<a class="open-in-browser" href="https://github.com/yzxr123/fangmo-editor">本项目源码与许可证</a>
+								<a class="open-in-browser" href="https://github.com/yzxr123/bookbench-mobile">本项目源码与许可证</a>
 							</p>
 							<a class="open-in-browser" href="https://blockbench.net" aria-label="访问 Blockbench 上游网站">
 								<img src="assets/logo_text_white.svg" alt="Blockbench 上游项目" width="220px">

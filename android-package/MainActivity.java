@@ -5,8 +5,10 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ActivityInfo;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -166,7 +168,11 @@ public class MainActivity extends Activity {
                 JSONObject info = new JSONObject(data);
                 String name = info.getString("name").replace('/', '_').replace('\\', '_');
                 String type = info.getString("type").split(";", 2)[0];
-                if (!type.contains("/") || type.equals("octet/stream")) type = "application/octet-stream";
+                // The Android document picker uses MIME types to locate extensions on duplicate names.
+                if (!type.contains("/") || type.equals("octet/stream")
+                    || type.equals("model/vnd.blockbench.bbmodel")) {
+                    type = "application/octet-stream";
+                }
                 stagedFile = File.createTempFile("export-", ".tmp", getCacheDir());
                 stagedOutput = new FileOutputStream(stagedFile);
                 saveIntent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
@@ -199,6 +205,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String documentName(Uri uri, String fallback) {
+        try (Cursor rows = getContentResolver().query(uri,
+            new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null)) {
+            if (rows != null && rows.moveToFirst()) {
+                int column = rows.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (column >= 0 && !rows.isNull(column)) return rows.getString(column);
+            }
+        } catch (RuntimeException ignored) {
+            // Some document providers allow writing but omit display name metadata.
+        }
+        return fallback;
+    }
+
     @Override
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
@@ -209,6 +228,7 @@ public class MainActivity extends Activity {
         } else if (request == SAVE_FILE && stagedFile != null) {
             WebMessagePort port = exportPort;
             File file = stagedFile;
+            String suggestedName = saveIntent.getStringExtra(Intent.EXTRA_TITLE);
             stagedFile = null;
             saveIntent = null;
             Uri target = result == RESULT_OK && data != null ? data.getData() : null;
@@ -223,7 +243,8 @@ public class MainActivity extends Activity {
                         if (destination == null) throw new IOException("Cannot open the selected document");
                         Files.copy(file.toPath(), destination);
                     }
-                    runOnUiThread(() -> replyToSave(port, "ok"));
+                    String name = documentName(target, suggestedName);
+                    runOnUiThread(() -> replyToSave(port, "saved:" + name));
                 } catch (IOException | SecurityException error) {
                     runOnUiThread(() -> replyToSave(port, "error"));
                 } finally {
